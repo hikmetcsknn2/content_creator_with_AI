@@ -398,8 +398,8 @@
                 
                 configs.forEach(config => {
                     const option = document.createElement('option');
-                    option.value = config.content_type;
-                    option.textContent = `${config.content_type} (${config.prompt_count} prompt)`;
+                    option.value = config.name;
+                    option.textContent = `${config.name} (${config.description})`;
                     select.appendChild(option);
                 });
             } catch (error) {
@@ -412,17 +412,7 @@
             if (!configType) return;
             
             try {
-                // Önce konfigürasyon listesini al
-                const listResponse = await fetch(`${API_BASE}/content-types`);
-                const configs = await listResponse.json();
-                const configInfo = configs.find(c => c.content_type === configType);
-                
-                if (!configInfo) {
-                    showStatus('error', 'Konfigürasyon bulunamadı!');
-                    return;
-                }
-                
-                // Sonra prompt'ları al
+                // Prompt'ları al
                 const promptsResponse = await fetch(`${API_BASE}/prompts/${configType}`);
                 const config = await promptsResponse.json();
                 
@@ -432,7 +422,7 @@
                 // Konfigürasyon bilgilerini göster
                 document.getElementById('configDetails').innerHTML = `
                     <p><strong>İçerik Türü:</strong> ${configType}</p>
-                    <p><strong>Prompt Sayısı:</strong> ${config.prompt_count || 0}</p>
+                    <p><strong>Prompt Sayısı:</strong> ${config.prompts ? config.prompts.length : 0}</p>
                     <p><strong>Varsayılan Model:</strong> ${config.prompts && config.prompts[0]?.ai_settings?.model || 'N/A'}</p>
                 `;
                 document.getElementById('configInfo').style.display = 'block';
@@ -458,43 +448,52 @@
             container.innerHTML = '';
             
             prompts.forEach((prompt, index) => {
+                // AI ayarları için fallback
+                const aiSettings = prompt.ai_settings || {
+                    model: 'gemini-2.5-flash',
+                    temperature: 0.7,
+                    top_p: 0.7,
+                    response_mime_type: 'text/plain',
+                    max_tokens: 8000
+                };
+                
                 const editor = document.createElement('div');
                 editor.className = 'prompt-editor';
                 editor.innerHTML = `
                     <h5>Prompt ${prompt.step}</h5>
-                    <textarea id="prompt_${prompt.step}" class="prompt-input" placeholder="Prompt içeriği...">${prompt.content || prompt.text}</textarea>
+                    <textarea id="prompt_${prompt.step}" class="prompt-input" placeholder="Prompt içeriği...">${prompt.text || prompt.content || ''}</textarea>
                     <div class="ai-settings">
                         <h6>AI Ayarları</h6>
                         <div class="grid">
                             <div class="form-group">
                                 <label>Model:</label>
                                 <select id="model_${prompt.step}">
-                                    <option value="gemini-2.5-flash" ${prompt.ai_settings.model === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash</option>
-                                    <option value="gemini-1.5-pro" ${prompt.ai_settings.model === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
+                                    <option value="gemini-2.5-flash" ${aiSettings.model === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash</option>
+                                    <option value="gemini-1.5-pro" ${aiSettings.model === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>MIME Type:</label>
                                 <select id="mime_${prompt.step}">
-                                    <option value="text/plain" ${prompt.ai_settings.response_mime_type === 'text/plain' ? 'selected' : ''}>Text/Plain</option>
-                                    <option value="text/markdown" ${prompt.ai_settings.response_mime_type === 'text/markdown' ? 'selected' : ''}>Text/Markdown</option>
-                                    <option value="application/json" ${prompt.ai_settings.response_mime_type === 'application/json' ? 'selected' : ''}>Application/JSON</option>
+                                    <option value="text/plain" ${aiSettings.response_mime_type === 'text/plain' ? 'selected' : ''}>Text/Plain</option>
+                                    <option value="text/markdown" ${aiSettings.response_mime_type === 'text/markdown' ? 'selected' : ''}>Text/Markdown</option>
+                                    <option value="application/json" ${aiSettings.response_mime_type === 'application/json' ? 'selected' : ''}>Application/JSON</option>
                                 </select>
                             </div>
                         </div>
                         <div class="grid">
                             <div class="form-group">
-                                <label>Temperature: <span id="temp_${prompt.step}">${prompt.ai_settings.temperature}</span></label>
+                                <label>Temperature: <span id="temp_${prompt.step}">${aiSettings.temperature}</span></label>
                                 <div class="slider-container">
-                                    <input type="range" class="slider" id="tempSlider_${prompt.step}" min="0" max="1" step="0.1" value="${prompt.ai_settings.temperature}" oninput="updateSlider(${prompt.step}, 'temp')">
-                                    <span class="slider-value" id="tempDisplay_${prompt.step}">${prompt.ai_settings.temperature}</span>
+                                    <input type="range" class="slider" id="tempSlider_${prompt.step}" min="0" max="1" step="0.1" value="${aiSettings.temperature}" oninput="updateSlider(${prompt.step}, 'temp')">
+                                    <span class="slider-value" id="tempDisplay_${prompt.step}">${aiSettings.temperature}</span>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Top P: <span id="topp_${prompt.step}">${prompt.ai_settings.top_p}</span></label>
+                                <label>Top P: <span id="topp_${prompt.step}">${aiSettings.top_p}</span></label>
                                 <div class="slider-container">
-                                    <input type="range" class="slider" id="toppSlider_${prompt.step}" min="0" max="1" step="0.1" value="${prompt.ai_settings.top_p}" oninput="updateSlider(${prompt.step}, 'topp')">
-                                    <span class="slider-value" id="toppDisplay_${prompt.step}">${prompt.ai_settings.top_p}</span>
+                                    <input type="range" class="slider" id="toppSlider_${prompt.step}" min="0" max="1" step="0.1" value="${aiSettings.top_p}" oninput="updateSlider(${prompt.step}, 'topp')">
+                                    <span class="slider-value" id="toppDisplay_${prompt.step}">${aiSettings.top_p}</span>
                                 </div>
                             </div>
                         </div>
@@ -563,7 +562,7 @@
                                     temperature: parseFloat(tempElement.textContent),
                                     top_p: parseFloat(toppElement.textContent),
                                     response_mime_type: mimeElement.value,
-                                    max_tokens: 8192
+                                    max_tokens: 8000
                                 };
                             } else {
                                 // Fallback: varsayılan ayarları kullan
@@ -572,7 +571,7 @@
                                     temperature: 0.7,
                                     top_p: 0.7,
                                     response_mime_type: 'text/plain',
-                                    max_tokens: 8192
+                                    max_tokens: 8000
                                 };
                             }
                         }
@@ -658,7 +657,7 @@
                                     temperature: temperature,
                                     top_p: topP,
                                     response_mime_type: mimeType,
-                                    max_tokens: 8192
+                                    max_tokens: 8000
                                 }
                             });
                         }
@@ -816,7 +815,7 @@
                             temperature: temperature,
                             top_p: topP,
                             response_mime_type: mimeType,
-                            max_tokens: 8192
+                            max_tokens: 8000
                         };
                         
                         prompts.push({
