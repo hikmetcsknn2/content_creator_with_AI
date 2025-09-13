@@ -144,6 +144,21 @@ async def get_prompts(content_type: str, db: Session = Depends(get_db)):
         "prompts": processed_prompts
     }
 
+@router.get("/content-types/{content_type}")
+async def get_content_type_details(content_type: str, db: Session = Depends(get_db)):
+    """Belirli bir konfigürasyonun tüm detaylarını getir"""
+    config = db.query(ContentConfig).filter(ContentConfig.name == content_type).first()
+    if not config:
+        raise HTTPException(status_code=404, detail="Konfigürasyon bulunamadı")
+    
+    return ContentConfigResponse(
+        id=config.id,
+        name=config.name,
+        description=config.description,
+        prompts=config.prompts,
+        created_at=config.created_at.isoformat()
+    )
+
 @router.post("/content-types", response_model=ContentConfigResponse)
 async def create_content_type(request: ContentConfigCreate, db: Session = Depends(get_db)):
     """Yeni konfigürasyon oluştur"""
