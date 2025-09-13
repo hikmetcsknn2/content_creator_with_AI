@@ -70,14 +70,12 @@ class ContentConfigCreate(BaseModel):
     content_type: str
     description: str = ""
     prompts: list  # [{"step": 1, "text": "...", "ai_settings": {...}}]
-    default_ai_settings: dict
 
 class ContentConfigResponse(BaseModel):
     id: int
     content_type: str
     description: str
     prompts: list
-    default_ai_settings: dict
     created_at: datetime
 
 class PromptTestRequest(BaseModel):
@@ -174,7 +172,6 @@ async def list_content_types():
             result.append({
                 "content_type": config.name,
                 "prompt_count": len(config.prompts),
-                "ai_config": config.default_ai_settings,
                 "description": config.description
             })
         return result
@@ -196,7 +193,13 @@ async def get_prompts(content_type: str):
                 "prompt_key": f"{content_type}_prompt_{prompt_data['step']}",
                 "step": prompt_data["step"],
                 "content": prompt_data["text"],
-                "ai_settings": prompt_data.get("ai_settings", config.default_ai_settings)
+                "ai_settings": prompt_data.get("ai_settings", {
+                    "model": "gemini-2.5-flash",
+                    "temperature": 0.7,
+                    "top_p": 0.7,
+                    "response_mime_type": "text/plain",
+                    "max_tokens": 8192
+                })
             })
         
         return {
@@ -225,7 +228,6 @@ async def generate_content(request: ContentGenerationRequest):
         
         print(f"✅ Konfigürasyon bulundu: {config.name}")
         print(f"📝 Prompt sayısı: {len(config.prompts)}")
-        print(f"🤖 Varsayılan AI ayarları: {config.default_ai_settings}")
         
         # Prompt'ları işle
         results = []
@@ -251,8 +253,14 @@ async def generate_content(request: ContentGenerationRequest):
             if current_content:
                 processed_prompt += f"\n\nÖnceki adımın sonucu:\n{current_content}"
             
-            # AI ayarlarını belirle (özel config varsa onu kullan, yoksa prompt'a özel, yoksa varsayılan)
-            ai_settings = config.default_ai_settings.copy()
+            # AI ayarlarını belirle (özel config varsa onu kullan, yoksa prompt'a özel)
+            ai_settings = prompt_data.get("ai_settings", {
+                "model": "gemini-2.5-flash",
+                "temperature": 0.7,
+                "top_p": 0.7,
+                "response_mime_type": "text/plain",
+                "max_tokens": 8192
+            })
             
             if f"step_{step}" in request.custom_ai_configs:
                 # Özel config kullan
@@ -295,8 +303,7 @@ async def generate_content(request: ContentGenerationRequest):
                 "total_steps": len(config.prompts),
                 "dynamic_data_used": request.dynamic_data,
                 "step_details": step_details,
-                "original_prompts": config.prompts,
-                "default_ai_settings": config.default_ai_settings
+                "original_prompts": config.prompts
             }
         }
         
@@ -331,6 +338,7 @@ async def test_single_prompt(request: PromptTestRequest):
 @app.post("/content-types")
 async def create_content_type(request: ContentConfigCreate):
     """Yeni konfigürasyon oluştur"""
+    print(f"🔍 Create request received: {request}")
     db = next(get_db())
     try:
         # Aynı isimde konfigürasyon var mı kontrol et
@@ -339,11 +347,11 @@ async def create_content_type(request: ContentConfigCreate):
             raise HTTPException(status_code=400, detail="Bu isimde konfigürasyon zaten var")
         
         # Yeni konfigürasyon oluştur
+        print(f"📝 Creating config: name={request.content_type}, prompts={len(request.prompts)}")
         new_config = ContentConfig(
             name=request.content_type,
             description=request.description,
-            prompts=request.prompts,
-            default_ai_settings=request.default_ai_settings
+            prompts=request.prompts
         )
         
         db.add(new_config)
@@ -355,7 +363,6 @@ async def create_content_type(request: ContentConfigCreate):
             "content_type": new_config.name,
             "description": new_config.description,
             "prompts": new_config.prompts,
-            "default_ai_settings": new_config.default_ai_settings,
             "created_at": new_config.created_at
         }
     except Exception as e:
@@ -376,7 +383,7 @@ async def update_content_type(content_type: str, request: ContentConfigCreate):
         # Güncelle
         config.description = request.description
         config.prompts = request.prompts
-        config.default_ai_settings = request.default_ai_settings
+        # default_ai_settings artık kullanılmıyor
         
         db.commit()
         
@@ -385,7 +392,6 @@ async def update_content_type(content_type: str, request: ContentConfigCreate):
             "content_type": config.name,
             "description": config.description,
             "prompts": config.prompts,
-            "default_ai_settings": config.default_ai_settings,
             "created_at": config.created_at
         }
     except Exception as e:

@@ -315,23 +315,6 @@
                         <textarea id="dynamicData" placeholder='{"location": "Antalya", "topic": "real estate"}'></textarea>
                     </div>
                     
-                    <div class="grid">
-                        <div class="form-group">
-                            <label>AI Model:</label>
-                            <select id="testModel">
-                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Temperature: <span id="tempValue">0.7</span></label>
-                            <div class="slider-container">
-                                <input type="range" class="slider" id="temperature" min="0" max="1" step="0.1" value="0.7">
-                                <span class="slider-value" id="tempDisplay">0.7</span>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
                         <button class="btn" onclick="runTest()">🚀 Test Çalıştır</button>
                         <button class="btn btn-success" onclick="saveConfig()" id="saveBtn" style="display: none;">💾 Kaydet</button>
@@ -393,7 +376,6 @@
         // Sayfa yüklendiğinde
         document.addEventListener('DOMContentLoaded', function() {
             loadConfigList();
-            setupSliders();
             generatePromptInputs(); // İlk prompt input'larını oluştur
         });
         
@@ -405,13 +387,6 @@
             document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
         }
         
-        function setupSliders() {
-            document.getElementById('temperature').addEventListener('input', function() {
-                const value = this.value;
-                document.getElementById('tempValue').textContent = value;
-                document.getElementById('tempDisplay').textContent = value;
-            });
-        }
         
         async function loadConfigList() {
             try {
@@ -466,15 +441,6 @@
                 if (config.prompts && config.prompts.length > 0) {
                     // Prompt'ları düzenleme için göster
                     showPromptEditors(config.prompts);
-                    
-                    // Test panelini ayarla
-                    const aiSettings = config.prompts[0].ai_settings;
-                    if (aiSettings) {
-                        document.getElementById('testModel').value = aiSettings.model || 'gemini-2.5-flash';
-                        document.getElementById('temperature').value = aiSettings.temperature || 0.7;
-                        document.getElementById('tempValue').textContent = aiSettings.temperature || 0.7;
-                        document.getElementById('tempDisplay').textContent = aiSettings.temperature || 0.7;
-                    }
                 } else {
                     showStatus('error', 'Konfigürasyonda prompt bulunamadı!');
                     document.getElementById('promptSection').style.display = 'none';
@@ -569,8 +535,7 @@
                     }
                 }
                 
-                const model = document.getElementById('testModel').value;
-                const temperature = document.getElementById('temperature').value;
+                // Test için basit fallback ayarlar
                 
                 // Düzenlenen prompt'ları ve AI ayarlarını topla
                 const customConfigs = {};
@@ -601,10 +566,10 @@
                                     max_tokens: 8192
                                 };
                             } else {
-                                // Fallback: test panelindeki ayarları kullan
+                                // Fallback: varsayılan ayarları kullan
                                 customConfigs[`step_${step}`] = {
-                                    model: model,
-                                    temperature: parseFloat(temperature),
+                                    model: 'gemini-2.5-flash',
+                                    temperature: 0.7,
                                     top_p: 0.7,
                                     response_mime_type: 'text/plain',
                                     max_tokens: 8192
@@ -705,7 +670,6 @@
                     return;
                 }
                 
-                const defaultAISettings = prompts[0].ai_settings;
                 
                 const response = await fetch(`${API_BASE}/content-types/${configType}`, {
                     method: 'PUT',
@@ -716,7 +680,6 @@
                         content_type: configType,
                         description: `Updated ${configType} configuration`,
                         prompts: prompts,
-                        default_ai_settings: defaultAISettings
                     })
                 });
                 
@@ -821,10 +784,15 @@
         }
         
         async function createConfig() {
+            console.log('🚀 createConfig function called!');
+            
             const configName = document.getElementById('configName').value;
             const promptCount = parseInt(document.getElementById('promptCount').value);
             
+            console.log(`📝 Config name: ${configName}, Prompt count: ${promptCount}`);
+            
             if (!configName.trim()) {
+                console.log('❌ Config name is empty');
                 showStatus('error', 'Konfigürasyon adı gerekli!');
                 return;
             }
@@ -833,7 +801,6 @@
                 showStatus('info', 'Konfigürasyon oluşturuluyor...');
                 
                 const prompts = [];
-                let defaultAISettings = null;
                 
                 for (let i = 1; i <= promptCount; i++) {
                     const content = document.getElementById(`new_prompt_${i}`).value;
@@ -849,12 +816,8 @@
                             temperature: temperature,
                             top_p: topP,
                             response_mime_type: mimeType,
-                            max_tokens: 1000
+                            max_tokens: 8192
                         };
-                        
-                        if (!defaultAISettings) {
-                            defaultAISettings = aiSettings;
-                        }
                         
                         prompts.push({
                             step: i,
@@ -878,19 +841,27 @@
                         content_type: configName,
                         description: `Created ${configName} configuration`,
                         prompts: prompts,
-                        default_ai_settings: defaultAISettings
                     })
                 });
                 
+                console.log(`📡 Response status: ${response.status}`);
+                console.log(`📡 Response ok: ${response.ok}`);
+                
                 if (response.ok) {
+                    console.log('✅ Success path triggered');
                     showStatus('success', 'Konfigürasyon başarıyla oluşturuldu!');
                     // Formu temizle
                     document.getElementById('configName').value = '';
                     document.getElementById('promptCount').value = '2';
                     document.getElementById('promptInputs').innerHTML = '';
-                    // Liste yenile
-                    loadConfigList();
+                    // Prompt input'larını yeniden oluştur
+                    generatePromptInputs();
+                    // Liste yenile (biraz gecikme ile)
+                    setTimeout(() => {
+                        loadConfigList();
+                    }, 1000);
                 } else {
+                    console.log('❌ Error path triggered');
                     const error = await response.json();
                     showStatus('error', `Oluşturma hatası: ${error.detail}`);
                 }
@@ -901,25 +872,30 @@
         }
         
         function showStatus(type, message) {
+            console.log(`📢 Status: ${type} - ${message}`); // Debug için
+            
             // Önceki status mesajlarını temizle
             document.querySelectorAll('.status').forEach(status => status.remove());
             
             const statusDiv = document.createElement('div');
             statusDiv.className = `status ${type}`;
             statusDiv.textContent = message;
+            statusDiv.style.position = 'fixed';
+            statusDiv.style.top = '20px';
+            statusDiv.style.right = '20px';
+            statusDiv.style.zIndex = '9999';
+            statusDiv.style.minWidth = '300px';
+            statusDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
             
-            // İlk card'a ekle
-            const firstCard = document.querySelector('.card');
-            if (firstCard) {
-                firstCard.insertBefore(statusDiv, firstCard.firstChild);
-            }
+            // Body'e ekle (fixed position için)
+            document.body.appendChild(statusDiv);
             
-            // 5 saniye sonra kaldır
+            // 3 saniye sonra kaldır
             setTimeout(() => {
                 if (statusDiv.parentNode) {
                     statusDiv.remove();
                 }
-            }, 5000);
+            }, 3000);
         }
     </script>
 </body>

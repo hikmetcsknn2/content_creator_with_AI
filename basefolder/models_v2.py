@@ -16,7 +16,6 @@ class ContentConfig(Base):
     
     # JSON olarak saklanacak veriler
     prompts = Column(JSON, nullable=False)  # [{"step": 1, "text": "...", "ai_settings": {...}}]
-    default_ai_settings = Column(JSON, nullable=False)  # {"model": "...", "temperature": 0.7, ...}
 
 # Database bağlantısı
 DATABASE_URL = "sqlite:///./content_assistant_v2.db"
