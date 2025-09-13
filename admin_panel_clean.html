@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Assistant - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin: 0;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #4facfe;
+            border-bottom-color: #4facfe;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card h3 .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4facfe;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4facfe;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: #4facfe;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .result h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .result pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .prompt-editor {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .prompt-editor h5 {
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .prompt-input {
+            height: 150px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-settings {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        
+        .ai-settings h6 {
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Content Assistant</h1>
+            <p>Admin Panel - Konfigürasyon Yönetimi</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('test')">🧪 Test & Düzenleme</button>
+            <button class="tab" onclick="showTab('create')">➕ Yeni Konfigürasyon</button>
+        </div>
+        
+        <!-- Test & Düzenleme Sayfası -->
+        <div id="test" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h3><span class="icon">⚙️</span>Konfigürasyon Seç</h3>
+                    
+                    <div class="form-group">
+                        <label>Mevcut Konfigürasyon:</label>
+                        <select id="configSelect" onchange="loadConfig()">
+                            <option value="">Konfigürasyon seçin...</option>
+                        </select>
+                    </div>
+                    
+                    <div id="configInfo" style="display: none;">
+                        <h4>Konfigürasyon Bilgileri</h4>
+                        <div id="configDetails"></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="icon">📝</span>Test Parametreleri</h3>
+                    
+                    <div class="form-group">
+                        <label>Dinamik Veriler (JSON):</label>
+                        <textarea id="dynamicData" placeholder='{"location": "Antalya", "topic": "real estate"}'></textarea>
+                    </div>
+                    
+                    <div class="grid">
+                        <div class="form-group">
+                            <label>AI Model:</label>
+                            <select id="testModel">
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Temperature: <span id="tempValue">0.7</span></label>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="temperature" min="0" max="1" step="0.1" value="0.7">
+                                <span class="slider-value" id="tempDisplay">0.7</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn" onclick="runTest()">🚀 Test Çalıştır</button>
+                        <button class="btn btn-success" onclick="saveConfig()" id="saveBtn" style="display: none;">💾 Kaydet</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Prompt Düzenleme -->
+            <div id="promptSection" style="display: none;">
+                <div class="card full-width">
+                    <h3><span class="icon">📝</span>Prompt'ları Düzenle</h3>
+                    <div id="promptContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Test Sonuçları -->
+            <div id="testResults" style="display: none;">
+                <div class="card full-width">
+                    <h3><span class="icon">📊</span>Test Sonuçları</h3>
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Yeni Konfigürasyon Sayfası -->
+        <div id="create" class="tab-content">
+            <div class="card full-width">
+                <h3><span class="icon">➕</span>Yeni Konfigürasyon Oluştur</h3>
+                
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Konfigürasyon Adı:</label>
+                        <input type="text" id="configName" placeholder="ornek_blog">
+                    </div>
+                    <div class="form-group">
+                        <label>Prompt Sayısı:</label>
+                        <select id="promptCount" onchange="generatePromptInputs()">
+                            <option value="1">1 Prompt</option>
+                            <option value="2" selected>2 Prompt</option>
+                            <option value="3">3 Prompt</option>
+                            <option value="4">4 Prompt</option>
+                            <option value="5">5 Prompt</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="promptInputs"></div>
+                
+                <div class="form-group">
+                    <button class="btn btn-success" onclick="createConfig()">🚀 Konfigürasyon Oluştur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfigList();
+            setupSliders();
+            generatePromptInputs(); // İlk prompt input'larını oluştur
+        });
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        function setupSliders() {
+            document.getElementById('temperature').addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('tempValue').textContent = value;
+                document.getElementById('tempDisplay').textContent = value;
+            });
+        }
+        
+        async function loadConfigList() {
+            try {
+                const response = await fetch(`${API_BASE}/content-types`);
+                const configs = await response.json();
+                
+                const select = document.getElementById('configSelect');
+                select.innerHTML = '<option value="">Konfigürasyon seçin...</option>';
+                
+                configs.forEach(config => {
+                    const option = document.createElement('option');
+                    option.value = config.content_type;
+                    option.textContent = `${config.content_type} (${config.prompt_count} prompt)`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('error', `Konfigürasyon listesi yüklenemedi: ${error.message}`);
+            }
+        }
+        
+        async function loadConfig() {
+            const configType = document.getElementById('configSelect').value;
+            if (!configType) return;
+            
+            try {
+                // Önce konfigürasyon listesini al
+                const listResponse = await fetch(`${API_BASE}/content-types`);
+                const configs = await listResponse.json();
+                const configInfo = configs.find(c => c.content_type === configType);
+                
+                if (!configInfo) {
+                    showStatus('error', 'Konfigürasyon bulunamadı!');
+                    return;
+                }
+                
+                // Sonra prompt'ları al
+                const promptsResponse = await fetch(`${API_BASE}/prompts/${configType}`);
+                const config = await promptsResponse.json();
+                
+                // Debug: Config içeriğini kontrol et
+                console.log('Config loaded:', config);
+                
+                // Konfigürasyon bilgilerini göster
+                document.getElementById('configDetails').innerHTML = `
+                    <p><strong>İçerik Türü:</strong> ${configType}</p>
+                    <p><strong>Prompt Sayısı:</strong> ${config.prompt_count || 0}</p>
+                    <p><strong>Varsayılan Model:</strong> ${config.prompts && config.prompts[0]?.ai_settings?.model || 'N/A'}</p>
+                `;
+                document.getElementById('configInfo').style.display = 'block';
+                
+                // Prompt'ları kontrol et
+                if (config.prompts && config.prompts.length > 0) {
+                    // Prompt'ları düzenleme için göster
+                    showPromptEditors(config.prompts);
+                    
+                    // Test panelini ayarla
+                    const aiSettings = config.prompts[0].ai_settings;
+                    if (aiSettings) {
+                        document.getElementById('testModel').value = aiSettings.model || 'gemini-2.5-flash';
+                        document.getElementById('temperature').value = aiSettings.temperature || 0.7;
+                        document.getElementById('tempValue').textContent = aiSettings.temperature || 0.7;
+                        document.getElementById('tempDisplay').textContent = aiSettings.temperature || 0.7;
+                    }
+                } else {
+                    showStatus('error', 'Konfigürasyonda prompt bulunamadı!');
+                    document.getElementById('promptSection').style.display = 'none';
+                }
+                
+                document.getElementById('saveBtn').style.display = 'inline-block';
+                
+            } catch (error) {
+                showStatus('error', `Konfigürasyon yüklenemedi: ${error.message}`);
+            }
+        }
+        
+        function showPromptEditors(prompts) {
+            const container = document.getElementById('promptContainer');
+            container.innerHTML = '';
+            
+            prompts.forEach((prompt, index) => {
+                const editor = document.createElement('div');
+                editor.className = 'prompt-editor';
+                editor.innerHTML = `
+                    <h5>Prompt ${prompt.step}</h5>
+                    <textarea id="prompt_${prompt.step}" class="prompt-input" placeholder="Prompt içeriği...">${prompt.content || prompt.text}</textarea>
+                    <div class="ai-settings">
+                        <h6>AI Ayarları</h6>
+                        <div class="grid">
+                            <div class="form-group">
+                                <label>Model:</label>
+                                <select id="model_${prompt.step}">
+                                    <option value="gemini-2.5-flash" ${prompt.ai_settings.model === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash</option>
+                                    <option value="gemini-1.5-pro" ${prompt.ai_settings.model === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>MIME Type:</label>
+                                <select id="mime_${prompt.step}">
+                                    <option value="text/plain" ${prompt.ai_settings.response_mime_type === 'text/plain' ? 'selected' : ''}>Text/Plain</option>
+                                    <option value="text/markdown" ${prompt.ai_settings.response_mime_type === 'text/markdown' ? 'selected' : ''}>Text/Markdown</option>
+                                    <option value="application/json" ${prompt.ai_settings.response_mime_type === 'application/json' ? 'selected' : ''}>Application/JSON</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid">
+                            <div class="form-group">
+                                <label>Temperature: <span id="temp_${prompt.step}">${prompt.ai_settings.temperature}</span></label>
+                                <div class="slider-container">
+                                    <input type="range" class="slider" id="tempSlider_${prompt.step}" min="0" max="1" step="0.1" value="${prompt.ai_settings.temperature}" oninput="updateSlider(${prompt.step}, 'temp')">
+                                    <span class="slider-value" id="tempDisplay_${prompt.step}">${prompt.ai_settings.temperature}</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Top P: <span id="topp_${prompt.step}">${prompt.ai_settings.top_p}</span></label>
+                                <div class="slider-container">
+                                    <input type="range" class="slider" id="toppSlider_${prompt.step}" min="0" max="1" step="0.1" value="${prompt.ai_settings.top_p}" oninput="updateSlider(${prompt.step}, 'topp')">
+                                    <span class="slider-value" id="toppDisplay_${prompt.step}">${prompt.ai_settings.top_p}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(editor);
+            });
+            
+            document.getElementById('promptSection').style.display = 'block';
+        }
+        
+        function updateSlider(step, type) {
+            const slider = document.getElementById(`${type}Slider_${step}`);
+            const value = slider.value;
+            document.getElementById(`${type}_${step}`).textContent = value;
+            document.getElementById(`${type}Display_${step}`).textContent = value;
+        }
+        
+        async function runTest() {
+            const configType = document.getElementById('configSelect').value;
+            const dynamicData = document.getElementById('dynamicData').value;
+            
+            if (!configType) {
+                showStatus('error', 'Konfigürasyon seçin!');
+                return;
+            }
+            
+            try {
+                showStatus('info', 'Test çalıştırılıyor...');
+                
+                let parsedData = {};
+                if (dynamicData.trim()) {
+                    try {
+                        parsedData = JSON.parse(dynamicData);
+                    } catch (e) {
+                        showStatus('error', 'Dinamik veri JSON formatında olmalı!');
+                        return;
+                    }
+                }
+                
+                const model = document.getElementById('testModel').value;
+                const temperature = document.getElementById('temperature').value;
+                
+                // Düzenlenen prompt'ları ve AI ayarlarını topla
+                const customConfigs = {};
+                const customPrompts = {};
+                
+                const promptElements = document.querySelectorAll('[id^="prompt_"]');
+                promptElements.forEach((element) => {
+                    if (element.tagName === 'TEXTAREA') {
+                        const step = element.id.replace('prompt_', '');
+                        const content = element.value;
+                        
+                        if (content.trim()) {
+                            // Düzenlenen prompt'u kaydet
+                            customPrompts[`step_${step}`] = content;
+                            
+                            // AI ayarlarını al
+                            const modelElement = document.getElementById(`model_${step}`);
+                            const mimeElement = document.getElementById(`mime_${step}`);
+                            const tempElement = document.getElementById(`temp_${step}`);
+                            const toppElement = document.getElementById(`topp_${step}`);
+                            
+                            if (modelElement && mimeElement && tempElement && toppElement) {
+                                customConfigs[`step_${step}`] = {
+                                    model: modelElement.value,
+                                    temperature: parseFloat(tempElement.textContent),
+                                    top_p: parseFloat(toppElement.textContent),
+                                    response_mime_type: mimeElement.value,
+                                    max_tokens: 8192
+                                };
+                            } else {
+                                // Fallback: test panelindeki ayarları kullan
+                                customConfigs[`step_${step}`] = {
+                                    model: model,
+                                    temperature: parseFloat(temperature),
+                                    top_p: 0.7,
+                                    response_mime_type: 'text/plain',
+                                    max_tokens: 8192
+                                };
+                            }
+                        }
+                    }
+                });
+                
+                const response = await fetch(`${API_BASE}/generate-content`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content_type: configType,
+                        dynamic_data: parsedData,
+                        custom_ai_configs: customConfigs,
+                        custom_prompts: customPrompts
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    let resultsHTML = '<h4>Test Sonuçları</h4>';
+                    
+                    if (result.prompt_outputs && result.prompt_outputs.length > 0) {
+                        result.prompt_outputs.forEach((output, index) => {
+                            resultsHTML += `
+                                <div class="result">
+                                    <h4>Prompt ${index + 1} Çıktısı</h4>
+                                    <pre>${output}</pre>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    if (result.content) {
+                        resultsHTML += `
+                            <div class="result">
+                                <h4>Final Çıktı</h4>
+                                <pre>${result.content}</pre>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('resultsContent').innerHTML = resultsHTML;
+                    document.getElementById('testResults').style.display = 'block';
+                    showStatus('success', 'Test başarılı!');
+                } else {
+                    const error = await response.json();
+                    showStatus('error', `Test hatası: ${error.detail}`);
+                }
+                
+            } catch (error) {
+                showStatus('error', `Test hatası: ${error.message}`);
+            }
+        }
+        
+        async function saveConfig() {
+            const configType = document.getElementById('configSelect').value;
+            
+            try {
+                showStatus('info', 'Konfigürasyon kaydediliyor...');
+                
+                const prompts = [];
+                const promptElements = document.querySelectorAll('[id^="prompt_"]');
+                
+                promptElements.forEach((element) => {
+                    if (element.tagName === 'TEXTAREA') {
+                        const step = parseInt(element.id.replace('prompt_', ''));
+                        const content = element.value;
+                        
+                        if (content.trim()) {
+                            const model = document.getElementById(`model_${step}`).value;
+                            const mimeType = document.getElementById(`mime_${step}`).value;
+                            const temperature = parseFloat(document.getElementById(`temp_${step}`).textContent);
+                            const topP = parseFloat(document.getElementById(`topp_${step}`).textContent);
+                            
+                            prompts.push({
+                                step: step,
+                                text: content,
+                                ai_settings: {
+                                    model: model,
+                                    temperature: temperature,
+                                    top_p: topP,
+                                    response_mime_type: mimeType,
+                                    max_tokens: 8192
+                                }
+                            });
+                        }
+                    }
+                });
+                
+                if (prompts.length === 0) {
+                    showStatus('error', 'Düzenlenmiş prompt bulunamadı!');
+                    return;
+                }
+                
+                const defaultAISettings = prompts[0].ai_settings;
+                
+                const response = await fetch(`${API_BASE}/content-types/${configType}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content_type: configType,
+                        description: `Updated ${configType} configuration`,
+                        prompts: prompts,
+                        default_ai_settings: defaultAISettings
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('success', 'Konfigürasyon başarıyla kaydedildi!');
+                } else {
+                    const error = await response.json();
+                    showStatus('error', `Kaydetme hatası: ${error.detail}`);
+                }
+                
+            } catch (error) {
+                showStatus('error', `Kaydetme hatası: ${error.message}`);
+            }
+        }
+        
+        function generatePromptInputs() {
+            const count = parseInt(document.getElementById('promptCount').value);
+            const container = document.getElementById('promptInputs');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= count; i++) {
+                const promptDiv = document.createElement('div');
+                promptDiv.className = 'prompt-editor';
+                promptDiv.innerHTML = `
+                    <h5>Prompt ${i}</h5>
+                    <textarea id="new_prompt_${i}" class="prompt-input" placeholder="Prompt ${i} içeriği..."></textarea>
+                    <div class="ai-settings">
+                        <h6>AI Ayarları</h6>
+                        <div class="grid">
+                            <div class="form-group">
+                                <label>Model:</label>
+                                <select id="new_model_${i}">
+                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>MIME Type:</label>
+                                <select id="new_mime_${i}">
+                                    <option value="text/plain">Text/Plain</option>
+                                    <option value="text/markdown">Text/Markdown</option>
+                                    <option value="application/json">Application/JSON</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid">
+                            <div class="form-group">
+                                <label>Temperature: <span id="new_temp_${i}">0.7</span></label>
+                                <div class="slider-container">
+                                    <input type="range" class="slider" id="new_tempSlider_${i}" min="0" max="1" step="0.1" value="0.7">
+                                    <span class="slider-value" id="new_tempDisplay_${i}">0.7</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Top P: <span id="new_topp_${i}">0.7</span></label>
+                                <div class="slider-container">
+                                    <input type="range" class="slider" id="new_toppSlider_${i}" min="0" max="1" step="0.1" value="0.7">
+                                    <span class="slider-value" id="new_toppDisplay_${i}">0.7</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(promptDiv);
+            }
+            
+            // Yeni slider'lar için event listener'lar ekle
+            setupNewSliders();
+        }
+        
+        function setupNewSliders() {
+            const count = parseInt(document.getElementById('promptCount').value);
+            
+            for (let i = 1; i <= count; i++) {
+                // Temperature slider
+                const tempSlider = document.getElementById(`new_tempSlider_${i}`);
+                if (tempSlider) {
+                    tempSlider.addEventListener('input', function() {
+                        const value = this.value;
+                        document.getElementById(`new_temp_${i}`).textContent = value;
+                        document.getElementById(`new_tempDisplay_${i}`).textContent = value;
+                    });
+                }
+                
+                // Top P slider
+                const toppSlider = document.getElementById(`new_toppSlider_${i}`);
+                if (toppSlider) {
+                    toppSlider.addEventListener('input', function() {
+                        const value = this.value;
+                        document.getElementById(`new_topp_${i}`).textContent = value;
+                        document.getElementById(`new_toppDisplay_${i}`).textContent = value;
+                    });
+                }
+            }
+        }
+        
+        function updateNewSlider(step, type) {
+            const slider = document.getElementById(`new_${type}Slider_${step}`);
+            const value = slider.value;
+            document.getElementById(`new_${type}_${step}`).textContent = value;
+            document.getElementById(`new_${type}Display_${step}`).textContent = value;
+        }
+        
+        async function createConfig() {
+            const configName = document.getElementById('configName').value;
+            const promptCount = parseInt(document.getElementById('promptCount').value);
+            
+            if (!configName.trim()) {
+                showStatus('error', 'Konfigürasyon adı gerekli!');
+                return;
+            }
+            
+            try {
+                showStatus('info', 'Konfigürasyon oluşturuluyor...');
+                
+                const prompts = [];
+                let defaultAISettings = null;
+                
+                for (let i = 1; i <= promptCount; i++) {
+                    const content = document.getElementById(`new_prompt_${i}`).value;
+                    
+                    if (content.trim()) {
+                        const model = document.getElementById(`new_model_${i}`).value;
+                        const mimeType = document.getElementById(`new_mime_${i}`).value;
+                        const temperature = parseFloat(document.getElementById(`new_temp_${i}`).textContent);
+                        const topP = parseFloat(document.getElementById(`new_topp_${i}`).textContent);
+                        
+                        const aiSettings = {
+                            model: model,
+                            temperature: temperature,
+                            top_p: topP,
+                            response_mime_type: mimeType,
+                            max_tokens: 1000
+                        };
+                        
+                        if (!defaultAISettings) {
+                            defaultAISettings = aiSettings;
+                        }
+                        
+                        prompts.push({
+                            step: i,
+                            text: content,
+                            ai_settings: aiSettings
+                        });
+                    }
+                }
+                
+                if (prompts.length === 0) {
+                    showStatus('error', 'En az bir prompt gerekli!');
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/content-types`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content_type: configName,
+                        description: `Created ${configName} configuration`,
+                        prompts: prompts,
+                        default_ai_settings: defaultAISettings
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('success', 'Konfigürasyon başarıyla oluşturuldu!');
+                    // Formu temizle
+                    document.getElementById('configName').value = '';
+                    document.getElementById('promptCount').value = '2';
+                    document.getElementById('promptInputs').innerHTML = '';
+                    // Liste yenile
+                    loadConfigList();
+                } else {
+                    const error = await response.json();
+                    showStatus('error', `Oluşturma hatası: ${error.detail}`);
+                }
+                
+            } catch (error) {
+                showStatus('error', `Oluşturma hatası: ${error.message}`);
+            }
+        }
+        
+        function showStatus(type, message) {
+            // Önceki status mesajlarını temizle
+            document.querySelectorAll('.status').forEach(status => status.remove());
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            
+            // İlk card'a ekle
+            const firstCard = document.querySelector('.card');
+            if (firstCard) {
+                firstCard.insertBefore(statusDiv, firstCard.firstChild);
+            }
+            
+            // 5 saniye sonra kaldır
+            setTimeout(() => {
+                if (statusDiv.parentNode) {
+                    statusDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
